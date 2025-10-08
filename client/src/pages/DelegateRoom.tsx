@@ -31,8 +31,13 @@ export default function DelegateRoom() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isConnected, setIsConnected] = useState(false);
 
+  if (!committee) {
+    setLocation("/");
+    return null;
+  }
+
   useEffect(() => {
-    if (!committee || !roomCode) {
+    if (!roomCode) {
       setLocation("/");
       return;
     }
@@ -73,11 +78,7 @@ export default function DelegateRoom() {
       socket.off("queueUpdated");
       socket.off("nextSpeaker");
     };
-  }, [committeeId, roomCode, committee, setLocation, currentUserId, toast]);
-
-  if (!committee) {
-    return null;
-  }
+  }, [committeeId, roomCode, setLocation, currentUserId, toast]);
 
   const handleEnterQueue = (data: { name: string; representation: string }) => {
     const socket = getSocket();

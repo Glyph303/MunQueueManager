@@ -29,8 +29,13 @@ export default function HostRoom() {
   const [activeSpeaker, setActiveSpeaker] = useState<Speaker | null>(null);
   const [isConnected, setIsConnected] = useState(false);
 
+  if (!committee) {
+    setLocation("/");
+    return null;
+  }
+
   useEffect(() => {
-    if (!committee || !roomCode) {
+    if (!roomCode) {
       setLocation("/");
       return;
     }
@@ -69,11 +74,7 @@ export default function HostRoom() {
       socket.off("queueUpdated");
       socket.off("nextSpeaker");
     };
-  }, [committeeId, roomCode, committee, setLocation, toast]);
-
-  if (!committee) {
-    return null;
-  }
+  }, [committeeId, roomCode, setLocation, toast]);
 
   const handleCallNext = () => {
     const socket = getSocket();
