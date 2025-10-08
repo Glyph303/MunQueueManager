@@ -1,0 +1,241 @@
+Build a complete, mobile-first, minimalistic MunQueue web app (frontend + backend) exactly as specified below. Produce a working Repl that runs both server and client. Use the following stack and constraints and implement all features precisely.
+
+--- PROJECT SUMMARY ---
+App name: MunQueue
+Purpose: Let delegates enter a First-Come-First-Serve speaking queue for MUN committees. Hosts (EB) manage the queue in real time. Delegates and hosts join via room codes. No login/auth required.
+
+--- TECH STACK (required) ---
+
+Frontend: React (Vite or CRA is fine) + Tailwind CSS for styling (mobile-first responsive design). Provide two main views/routes: Host view and Delegate view (or a single SPA with role toggle).
+
+Backend: Node.js + Express
+
+Realtime: Socket.IO (server + client)
+
+Storage: In-memory per-room Map for the MVP (persist only if env var USE_FIREBASE=true and Firebase config provided).
+
+Dev tools: nodemon (server dev), npm scripts for start/dev.
+
+--- HIGH-LEVEL REQUIREMENTS (must be implemented) ---
+
+Rooms
+
+Hosts create a room (server generates a 6-character room code: uppercase letters + digits, e.g., A7B9C2) or hosts may enter an existing code.
+
+Multiple rooms may exist concurrently; each room has its own queue.
+
+No login
+
+Access control via room codes only. No username/password. Delegates enter a name and choose Country/Portfolio.
+
+Single active queue per room
+
+Each room maintains one queue at a time (SSL / Moderated speaking list). Host may reset and start again.
+
+Realtime behavior
+
+All updates must be pushed via Socket.IO and visible within < 2–3 seconds (practically instantaneous).
+
+Provide the following Socket.IO event names and payloads (exact):
+
+Client -> Server:
+
+joinRoom { room: string }
+
+enterQueue { room: string, name: string, country: string, portfolio?: string }
+
+leaveQueue { room: string, socketId?: string } (delegate can leave)
+
+callNext { room: string }
+
+removeSpeaker { room: string, index: number }
+
+moveSpeaker { room: string, fromIndex: number, toIndex: number }
+
+resetQueue { room: string }
+
+Server -> Clients:
+
+queueUpdated { queue: Array<{ id: string, name:string, country:string, portfolio?:string }> }
+
+nextSpeaker { id:string, name:string, country:string, portfolio?:string }
+
+joinedRoomAck { room: string, queue: [...] }
+
+Each speaker entry should have a unique id (e.g., UUID or socket id + timestamp) so hosts can reorder/remove reliably.
+
+Delegate UI
+
+Input: Room code, Name, Country (dropdown), optional Portfolio (dropdown).
+
+Button: Enter Queue (disabled if already in queue).
+
+Show live queue (name + country + position). Delegates can optionally remove themselves.
+
+Host (EB) UI
+
+Option to create a room (generate code) and to open a room with code.
+
+Show live queue with position numbers.
+
+Buttons:
+
+Call Next Speaker — removes first person from queue, emits nextSpeaker.
+
+Remove — remove any speaker (button next to each entry).
+
+Re-order — drag-and-drop to reorder OR up/down buttons; emits moveSpeaker.
+
+Reset Queue — clear queue.
+
+Host should have a clear "Active Speaker" indicator when nextSpeaker is emitted.
+
+Mobile-first minimalistic UI
+
+Large tappable buttons, readable fonts, compact queue listing for mobile screens.
+
+Clean neutral color scheme. Use Tailwind classes and responsive breakpoints.
+
+Two views accessible via routes:
+
+/ — landing with role selection (Host / Delegate)
+
+/host/:roomCode — host console
+
+/room/:roomCode — delegate console (or equivalent)
+
+Server API (additional helpful endpoints)
+
+GET /api/room/:roomCode returns current queue JSON (for debugging).
+
+POST /api/room optional endpoint to create a room and return code (server-side generation).
+
+Edge cases & UX
+
+Prevent duplicate entries from same socket (disable Enter Queue if already in queue).
+
+If the host resets room, clients must receive queueUpdated with empty array.
+
+If a client disconnects, remove them from queue automatically (use socket id mapping).
+
+If host calls next and queue empty, do nothing (or send empty nextSpeaker signal with null).
+
+Performance
+
+Keep everything in-memory Map: Map<roomCode, { queue: [], sockets: Map }> for speed.
+
+All operations should be O(1)/O(n) minimal.
+
+--- FILE STRUCTURE YOU MUST CREATE ---
+Provide a clear file layout. Example (Agent should produce similar):
+
+/server
+  index.js             # Express + Socket.IO server
+  rooms.js             # Room & queue manager (in-memory)
+  package.json         # server dependencies & scripts
+/client
+  package.json         # React + tailwind + scripts
+  src/
+    main.jsx
+    App.jsx
+    pages/
+      Landing.jsx
+      HostRoom.jsx
+      DelegateRoom.jsx
+    components/
+      QueueList.jsx
+      RoomJoinForm.jsx
+      HostControls.jsx
+    styles/
+      index.css         # Tailwind base
+  index.html
+README.md
+
+
+--- DEV & RUN SCRIPTS (required in generated Repl) ---
+
+Root README with run instructions.
+
+For Replit, provide a single run command the Repl UI will use. Example (preferred): run the Node server which also serves the built frontend in production, or start both concurrently in dev.
+
+Example scripts (agent should create):
+
+server script: node server/index.js
+
+client script: cd client && npm run dev (if using Vite)
+
+dev script: use concurrently to run both in development (optional)
+
+On Replit, the Repl should expose a single port and serve the client from the server (so the preview shows the app automatically). If easier, the server should serve static built client files from /client/dist when NODE_ENV=production.
+
+--- IMPLEMENTATION DETAILS (do not omit) ---
+
+Use Socket.IO rooms (socket.join(room)) to isolate traffic per room.
+
+On joinRoom, send joinedRoomAck containing current queue.
+
+Use UUIDs for speaker id (or generate socket.id + timestamp).
+
+Map socket id -> speaker id to remove on disconnect.
+
+Keep server logs minimal but helpful (console.log for room creation, joins, and critical errors).
+
+Include client-side logic to reconnect on network drop (Socket.IO will mostly handle it).
+
+Add basic input validation for room codes and names.
+
+--- OPTIONAL (but include as TOGGLE) ---
+
+Add an environment variable USE_FIREBASE=false by default. If Agent 3 finds Firebase config in Replit secrets (or env is set true and config provided), wire up Firebase Realtime DB as persistent store instead of in-memory. But do not require Firebase to run.
+
+--- TESTING / QA CHECKLIST (agent must include in README) ---
+
+Start the Repl. Open the app (public URL).
+
+Create or generate a room code as Host.
+
+On another tab/device open Delegate view, join the same room code.
+
+Delegate enters name/country and clicks Enter Queue — verify host sees update immediately.
+
+Host clicks Call Next — verify first delegate removed and nextSpeaker visible on both sides.
+
+Host removes and reorders entries — verify queue updates on delegate side.
+
+Delegate disconnects (close tab) — verify server removes them from queue and host view updates.
+
+Click Reset Queue — verify queue cleared for all clients.
+
+--- DELIVERY FORMAT (strict) ---
+
+Provide a single Repl that runs out-of-the-box.
+
+Include README.md with the above run & test instructions and the list of Socket.IO events and payload examples.
+
+Ensure the Repl run command serves the app on the port Replit expects (use process.env.PORT || 3000).
+
+--- EXTRA (UX copy / small touches) ---
+
+On host: display the room code prominently with a “Copy” button.
+
+Show position numbers and a small country flag emoji if possible (emoji mapping optional).
+
+Use simple toast or alert for nextSpeaker (do not require sounds).
+
+Make buttons large with good contrast for mobile.
+
+--- DO NOT DO ---
+
+Do not add user authentication or registration flows.
+
+Do not add ads, telemetry, or any 3rd-party tracking by default.
+
+Do not require any paid services to run.
+
+--- WHEN FINISHED ---
+
+Ensure the Repl is runnable and provide the preview link in the Repl UI.
+
+Add a short note in README: “If you want persistence across reboots, set USE_FIREBASE=true and add Firebase credentials to Replit secrets; instructions below.”
+
+You MUST produce a working, copyable Repl that follows these specs exactly. Prioritize real-time correctness, mobile-friendly UI, and a very small, clean codebase that is easy to understand and extend.
