@@ -1,27 +1,54 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Users, UserCheck } from "lucide-react";
-import { useLocation } from "wouter";
+import { Users, UserCheck, ArrowLeft } from "lucide-react";
+import { useLocation, useRoute } from "wouter";
+import { getCommitteeById } from "@shared/committees";
 
 export default function Landing() {
   const [, setLocation] = useLocation();
+  const [, params] = useRoute("/committee/:committeeId");
+  const committeeId = params?.committeeId || "";
+  const committee = getCommitteeById(committeeId);
+
+  if (!committee) {
+    setLocation("/");
+    return null;
+  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <div className="w-full max-w-sm space-y-8">
+    <div className="min-h-screen p-4">
+      <div className="max-w-sm mx-auto pt-8 space-y-8">
+        <Button
+          variant="ghost"
+          onClick={() => setLocation("/")}
+          className="mb-4"
+          data-testid="button-back"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Committees
+        </Button>
+
         <div className="text-center">
-          <h1 className="text-4xl font-bold tracking-tight mb-2">
-            MunQueue
+          <h1 className="text-3xl font-bold tracking-tight mb-1">
+            {committee.name}
           </h1>
-          <p className="text-muted-foreground">
-            Real-time speaking queue management for MUN committees
+          <p className="text-sm text-muted-foreground mb-4">
+            {committee.fullName}
           </p>
+          <div className="p-4 rounded-lg bg-card border border-card-border">
+            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground mb-1">
+              Agenda
+            </p>
+            <p className="text-sm font-medium">
+              {committee.agenda}
+            </p>
+          </div>
         </div>
 
         <div className="space-y-4">
           <Card
             className="p-8 hover-elevate active-elevate-2 cursor-pointer transition-all"
-            onClick={() => setLocation("/host")}
+            onClick={() => setLocation(`/committee/${committeeId}/host`)}
             data-testid="card-host"
           >
             <div className="flex items-start gap-4">
@@ -39,7 +66,7 @@ export default function Landing() {
 
           <Card
             className="p-8 hover-elevate active-elevate-2 cursor-pointer transition-all"
-            onClick={() => setLocation("/delegate")}
+            onClick={() => setLocation(`/committee/${committeeId}/delegate`)}
             data-testid="card-delegate"
           >
             <div className="flex items-start gap-4">

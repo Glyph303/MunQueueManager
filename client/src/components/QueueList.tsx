@@ -4,8 +4,7 @@ import { Users } from "lucide-react";
 interface Speaker {
   id: string;
   name: string;
-  country: string;
-  portfolio?: string;
+  representation: string;
 }
 
 interface QueueListProps {

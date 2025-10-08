@@ -4,8 +4,7 @@ export default function QueueItemExample() {
   const speaker = {
     id: "1",
     name: "John Smith",
-    country: "United States",
-    portfolio: "Economic Affairs"
+    representation: "United States of America"
   };
 
   return (

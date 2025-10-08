@@ -9,30 +9,37 @@ import QueueList from "@/components/QueueList";
 import { ArrowLeft, LogOut } from "lucide-react";
 import { useLocation, useRoute } from "wouter";
 import { useToast } from "@/hooks/use-toast";
+import { getCommitteeById } from "@shared/committees";
 
 interface Speaker {
   id: string;
   name: string;
-  country: string;
-  portfolio?: string;
+  representation: string;
 }
 
 export default function DelegateRoom() {
-  const [, params] = useRoute("/room/:roomCode");
+  const [, params] = useRoute("/committee/:committeeId/room/:roomCode");
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const committeeId = params?.committeeId || "";
   const roomCode = params?.roomCode || "A7B9C2";
+  const committee = getCommitteeById(committeeId);
+
+  if (!committee) {
+    setLocation("/");
+    return null;
+  }
 
   //todo: remove mock functionality - Replace with real Socket.IO integration
   const [queue, setQueue] = useState<Speaker[]>([
-    { id: "1", name: "John Smith", country: "United States", portfolio: "Economic Affairs" },
-    { id: "2", name: "Maria Garcia", country: "Spain" },
+    { id: "1", name: "John Smith", representation: "United States of America" },
+    { id: "2", name: "Maria Garcia", representation: "Spain" },
   ]);
   const [activeSpeaker, setActiveSpeaker] = useState<Speaker | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isConnected] = useState(true);
 
-  const handleEnterQueue = (data: { name: string; country: string; portfolio?: string }) => {
+  const handleEnterQueue = (data: { name: string; representation: string }) => {
     const newSpeaker: Speaker = {
       id: Date.now().toString(),
       ...data,
@@ -55,6 +62,7 @@ export default function DelegateRoom() {
   };
 
   const isInQueue = currentUserId !== null;
+  const memberLabel = committeeId === 'loksabha' ? 'Member' : 'Country/Organization';
 
   return (
     <div className="min-h-screen pb-8">
@@ -63,11 +71,15 @@ export default function DelegateRoom() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => setLocation("/")}
+            onClick={() => setLocation(`/committee/${committeeId}`)}
             data-testid="button-back"
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
+          <div className="flex-1 text-center">
+            <p className="text-sm font-medium">{committee.name}</p>
+            <p className="text-xs text-muted-foreground truncate">{committee.agenda}</p>
+          </div>
           <ConnectionStatus isConnected={isConnected} />
         </div>
       </header>
@@ -80,7 +92,11 @@ export default function DelegateRoom() {
         {!isInQueue ? (
           <Card className="p-6">
             <h2 className="text-xl font-semibold mb-4">Enter Queue</h2>
-            <DelegateForm onSubmit={handleEnterQueue} />
+            <DelegateForm 
+              onSubmit={handleEnterQueue} 
+              members={committee.members}
+              memberLabel={memberLabel}
+            />
           </Card>
         ) : (
           <Card className="p-6">

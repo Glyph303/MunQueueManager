@@ -2,10 +2,19 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import RoomJoinForm from "@/components/RoomJoinForm";
 import { ArrowLeft } from "lucide-react";
-import { useLocation } from "wouter";
+import { useLocation, useRoute } from "wouter";
+import { getCommitteeById } from "@shared/committees";
 
 export default function HostSetup() {
   const [, setLocation] = useLocation();
+  const [, params] = useRoute("/committee/:committeeId/host");
+  const committeeId = params?.committeeId || "";
+  const committee = getCommitteeById(committeeId);
+
+  if (!committee) {
+    setLocation("/");
+    return null;
+  }
 
   const generateRoomCode = () => {
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -18,11 +27,11 @@ export default function HostSetup() {
 
   const handleCreateNew = () => {
     const code = generateRoomCode();
-    setLocation(`/host/${code}`);
+    setLocation(`/committee/${committeeId}/host/${code}`);
   };
 
   const handleJoin = (code: string) => {
-    setLocation(`/host/${code}`);
+    setLocation(`/committee/${committeeId}/host/${code}`);
   };
 
   return (
@@ -30,7 +39,7 @@ export default function HostSetup() {
       <div className="max-w-md mx-auto pt-8 space-y-6">
         <Button
           variant="ghost"
-          onClick={() => setLocation("/")}
+          onClick={() => setLocation(`/committee/${committeeId}`)}
           className="mb-4"
           data-testid="button-back"
         >
@@ -40,6 +49,9 @@ export default function HostSetup() {
 
         <div className="text-center">
           <h1 className="text-2xl font-semibold mb-2">Host Setup</h1>
+          <p className="text-sm text-muted-foreground mb-1">
+            {committee.name} - {committee.agenda}
+          </p>
           <p className="text-muted-foreground">
             Create a new room or join an existing one
           </p>

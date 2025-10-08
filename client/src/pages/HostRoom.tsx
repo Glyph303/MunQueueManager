@@ -8,25 +8,32 @@ import QueueList from "@/components/QueueList";
 import { ArrowLeft } from "lucide-react";
 import { useLocation, useRoute } from "wouter";
 import { useToast } from "@/hooks/use-toast";
+import { getCommitteeById } from "@shared/committees";
 
 interface Speaker {
   id: string;
   name: string;
-  country: string;
-  portfolio?: string;
+  representation: string;
 }
 
 export default function HostRoom() {
-  const [, params] = useRoute("/host/:roomCode");
+  const [, params] = useRoute("/committee/:committeeId/host/:roomCode");
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const committeeId = params?.committeeId || "";
   const roomCode = params?.roomCode || "A7B9C2";
+  const committee = getCommitteeById(committeeId);
+
+  if (!committee) {
+    setLocation("/");
+    return null;
+  }
 
   //todo: remove mock functionality - Replace with real Socket.IO integration
   const [queue, setQueue] = useState<Speaker[]>([
-    { id: "1", name: "John Smith", country: "United States", portfolio: "Economic Affairs" },
-    { id: "2", name: "Maria Garcia", country: "Spain" },
-    { id: "3", name: "Ahmed Hassan", country: "Egypt", portfolio: "Security Council" },
+    { id: "1", name: "John Smith", representation: "United States of America" },
+    { id: "2", name: "Maria Garcia", representation: "Spain" },
+    { id: "3", name: "Ahmed Hassan", representation: "Egypt" },
   ]);
   const [activeSpeaker, setActiveSpeaker] = useState<Speaker | null>(null);
   const [isConnected] = useState(true);
@@ -38,7 +45,7 @@ export default function HostRoom() {
       setQueue(queue.slice(1));
       toast({
         title: "Speaker Called",
-        description: `${next.name} from ${next.country}`,
+        description: `${next.name} representing ${next.representation}`,
       });
     }
   };
@@ -74,11 +81,15 @@ export default function HostRoom() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => setLocation("/")}
+            onClick={() => setLocation(`/committee/${committeeId}`)}
             data-testid="button-back"
           >
             <ArrowLeft className="h-5 w-5" />
           </Button>
+          <div className="flex-1 text-center">
+            <p className="text-sm font-medium">{committee.name}</p>
+            <p className="text-xs text-muted-foreground">{committee.agenda}</p>
+          </div>
           <ConnectionStatus isConnected={isConnected} />
         </div>
       </header>

@@ -3,8 +3,7 @@ import { Users } from "lucide-react";
 interface Speaker {
   id: string;
   name: string;
-  country: string;
-  portfolio?: string;
+  representation: string;
 }
 
 interface ActiveSpeakerBannerProps {
@@ -28,9 +27,8 @@ export default function ActiveSpeakerBanner({ speaker }: ActiveSpeakerBannerProp
           <p className="text-lg font-semibold" data-testid="text-speaker-name">
             {speaker.name}
           </p>
-          <p className="text-sm text-muted-foreground" data-testid="text-speaker-country">
-            {speaker.country}
-            {speaker.portfolio && ` • ${speaker.portfolio}`}
+          <p className="text-sm text-muted-foreground" data-testid="text-speaker-representation">
+            {speaker.representation}
           </p>
         </div>
       </div>

@@ -5,19 +5,17 @@ export default function QueueListExample() {
     {
       id: "1",
       name: "John Smith",
-      country: "United States",
-      portfolio: "Economic Affairs"
+      representation: "United States of America"
     },
     {
       id: "2",
       name: "Maria Garcia",
-      country: "Spain",
+      representation: "Spain"
     },
     {
       id: "3",
       name: "Ahmed Hassan",
-      country: "Egypt",
-      portfolio: "Security Council"
+      representation: "Egypt"
     }
   ];
 

@@ -5,8 +5,7 @@ import { Trash2, ChevronUp, ChevronDown } from "lucide-react";
 interface Speaker {
   id: string;
   name: string;
-  country: string;
-  portfolio?: string;
+  representation: string;
 }
 
 interface QueueItemProps {
@@ -54,8 +53,7 @@ export default function QueueItem({
           )}
         </div>
         <p className="text-sm text-muted-foreground truncate" data-testid="text-speaker-info">
-          {speaker.country}
-          {speaker.portfolio && ` • ${speaker.portfolio}`}
+          {speaker.representation}
         </p>
       </div>
       {isHost && (
