@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import RoomCodeDisplay from "@/components/RoomCodeDisplay";
@@ -10,6 +10,7 @@ import { ArrowLeft, LogOut } from "lucide-react";
 import { useLocation, useRoute } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { getCommitteeById } from "@shared/committees";
+import { getSocket } from "@/lib/socket";
 
 interface Speaker {
   id: string;
@@ -22,39 +23,85 @@ export default function DelegateRoom() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const committeeId = params?.committeeId || "";
-  const roomCode = params?.roomCode || "A7B9C2";
+  const roomCode = params?.roomCode || "";
   const committee = getCommitteeById(committeeId);
 
+  const [queue, setQueue] = useState<Speaker[]>([]);
+  const [activeSpeaker, setActiveSpeaker] = useState<Speaker | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
+
+  useEffect(() => {
+    if (!committee || !roomCode) {
+      setLocation("/");
+      return;
+    }
+
+    const socket = getSocket();
+
+    socket.on("connect", () => {
+      setIsConnected(true);
+      socket.emit("joinRoom", { roomCode, committeeId });
+    });
+
+    socket.on("disconnect", () => {
+      setIsConnected(false);
+    });
+
+    socket.on("queueUpdated", ({ queue: newQueue, activeSpeaker: newActiveSpeaker }: { queue: Speaker[]; activeSpeaker: Speaker | null }) => {
+      setQueue(newQueue);
+      setActiveSpeaker(newActiveSpeaker);
+    });
+
+    socket.on("nextSpeaker", (speaker: Speaker) => {
+      if (speaker.id === currentUserId) {
+        toast({
+          title: "You're Up!",
+          description: "You have been called to speak",
+        });
+      }
+    });
+
+    if (socket.connected) {
+      socket.emit("joinRoom", { roomCode, committeeId });
+      setIsConnected(true);
+    }
+
+    return () => {
+      socket.off("connect");
+      socket.off("disconnect");
+      socket.off("queueUpdated");
+      socket.off("nextSpeaker");
+    };
+  }, [committeeId, roomCode, committee, setLocation, currentUserId, toast]);
+
   if (!committee) {
-    setLocation("/");
     return null;
   }
 
-  //todo: remove mock functionality - Replace with real Socket.IO integration
-  const [queue, setQueue] = useState<Speaker[]>([
-    { id: "1", name: "John Smith", representation: "United States of America" },
-    { id: "2", name: "Maria Garcia", representation: "Spain" },
-  ]);
-  const [activeSpeaker, setActiveSpeaker] = useState<Speaker | null>(null);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [isConnected] = useState(true);
-
   const handleEnterQueue = (data: { name: string; representation: string }) => {
+    const socket = getSocket();
     const newSpeaker: Speaker = {
-      id: Date.now().toString(),
+      id: socket.id || Date.now().toString(),
       ...data,
     };
-    setQueue([...queue, newSpeaker]);
+    
+    socket.emit("enterQueue", { roomCode, speaker: newSpeaker });
     setCurrentUserId(newSpeaker.id);
+    
     toast({
       title: "Joined Queue",
-      description: `You are now in position ${queue.length + 1}`,
+      description: "You have entered the speaking queue",
     });
   };
 
   const handleLeaveQueue = () => {
-    setQueue(queue.filter((s) => s.id !== currentUserId));
+    if (!currentUserId) return;
+    
+    const socket = getSocket();
+    socket.emit("leaveQueue", { roomCode, speakerId: currentUserId });
     setCurrentUserId(null);
+    
     toast({
       title: "Left Queue",
       description: "You have been removed from the queue",
